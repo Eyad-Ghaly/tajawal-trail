@@ -1,0 +1,311 @@
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Navbar } from "@/components/Navbar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { 
+  TrendingUp, 
+  Award, 
+  Flame, 
+  Target,
+  Brain,
+  Globe,
+  Users,
+  CheckCircle2,
+  Clock
+} from "lucide-react";
+
+const Profile = () => {
+  const [searchParams] = useSearchParams();
+  const userIdParam = searchParams.get("userId");
+  const [profile, setProfile] = useState<any>(null);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [userTasks, setUserTasks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadProfile();
+  }, [userIdParam]);
+
+  const loadProfile = async () => {
+    try {
+      let userId = userIdParam;
+      
+      if (!userId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        userId = user?.id || null;
+      }
+
+      if (!userId) return;
+
+      // Load profile
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+      setProfile(profileData);
+
+      // Load activities
+      const { data: activitiesData } = await supabase
+        .from("activities")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      setActivities(activitiesData || []);
+
+      // Load user tasks
+      const { data: tasksData } = await supabase
+        .from("user_tasks")
+        .select(`
+          *,
+          task:tasks(*)
+        `)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      setUserTasks(tasksData || []);
+    } catch (error) {
+      console.error("Error loading profile:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "approved": return "bg-success text-white";
+      case "submitted": return "bg-info text-white";
+      case "rejected": return "bg-destructive text-white";
+      default: return "bg-warning text-white";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "approved": return "مقبول";
+      case "submitted": return "قيد المراجعة";
+      case "rejected": return "مرفوض";
+      default: return "معلق";
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container py-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-48 bg-muted rounded-lg"></div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="h-64 bg-muted rounded-lg"></div>
+              <div className="h-64 bg-muted rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <Navbar />
+      
+      <div className="container py-8 space-y-8">
+        {/* Profile Header */}
+        <Card className="border-none shadow-xl">
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              <Avatar className="h-32 w-32 border-4 border-primary/20">
+                <AvatarImage src={profile?.avatar_url} />
+                <AvatarFallback className="text-3xl bg-primary text-primary-foreground">
+                  {profile?.full_name?.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              
+              <div className="flex-1 text-center md:text-right space-y-3">
+                <div>
+                  <h1 className="text-3xl font-bold mb-1">{profile?.full_name}</h1>
+                  <Badge variant="outline" className="text-base">
+                    {profile?.level}
+                  </Badge>
+                </div>
+                
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-sm">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    <span className="font-medium">{profile?.xp_total || 0} XP</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-secondary" />
+                    <span className="font-medium">
+                      {Math.round(profile?.overall_progress || 0)}% تقدم
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Flame className="h-4 w-4 text-warning" />
+                    <span className="font-medium">{profile?.streak_days || 0} يوم متتالي</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Progress Cards */}
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="border-none shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Brain className="h-5 w-5 text-primary" />
+                تحليل البيانات
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>التقدم</span>
+                  <span className="font-medium">
+                    {Math.round(profile?.data_progress || 0)}%
+                  </span>
+                </div>
+                <Progress value={profile?.data_progress || 0} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Globe className="h-5 w-5 text-secondary" />
+                اللغة الإنجليزية
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>التقدم</span>
+                  <span className="font-medium">
+                    {Math.round(profile?.english_progress || 0)}%
+                  </span>
+                </div>
+                <Progress value={profile?.english_progress || 0} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Users className="h-5 w-5 text-success" />
+                المهارات الناعمة
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>التقدم</span>
+                  <span className="font-medium">
+                    {Math.round(profile?.soft_progress || 0)}%
+                  </span>
+                </div>
+                <Progress value={profile?.soft_progress || 0} />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Tasks History */}
+          <Card className="border-none shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5" />
+                سجل المهام
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {userTasks.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    لا توجد مهام بعد
+                  </p>
+                ) : (
+                  userTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex items-start justify-between gap-3 p-3 rounded-lg border"
+                    >
+                      <div className="flex-1">
+                        <h4 className="font-medium text-sm leading-tight">
+                          {task.task?.title}
+                        </h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge className={getStatusColor(task.status)} variant="secondary">
+                            {getStatusLabel(task.status)}
+                          </Badge>
+                          {task.xp_granted && (
+                            <span className="text-xs text-success">
+                              +{task.xp_granted} XP
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(task.created_at).toLocaleDateString("ar-SA")}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Activities Timeline */}
+          <Card className="border-none shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                النشاطات الأخيرة
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {activities.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    لا توجد نشاطات بعد
+                  </p>
+                ) : (
+                  activities.map((activity) => (
+                    <div key={activity.id} className="flex gap-3">
+                      <div className="flex-shrink-0 w-2 h-2 rounded-full bg-primary mt-2"></div>
+                      <div className="flex-1">
+                        <p className="text-sm">{activity.description}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {activity.xp_earned > 0 && (
+                            <span className="text-xs text-success">
+                              +{activity.xp_earned} XP
+                            </span>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(activity.created_at).toLocaleDateString("ar-SA")}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Profile;
