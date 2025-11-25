@@ -26,6 +26,7 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<any>(null);
   const [tasks, setTasks] = useState<any[]>([]);
   const [lessons, setLessons] = useState<any[]>([]);
+  const [todayCheckin, setTodayCheckin] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,6 +38,8 @@ const Dashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const today = new Date().toISOString().split('T')[0];
+
       // Load profile
       const { data: profileData } = await supabase
         .from("profiles")
@@ -44,6 +47,15 @@ const Dashboard = () => {
         .eq("id", user.id)
         .single();
       setProfile(profileData);
+
+      // Load today's checkin
+      const { data: checkinData } = await supabase
+        .from("daily_checkin")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("date", today)
+        .maybeSingle();
+      setTodayCheckin(checkinData);
 
       // Load user tasks
       const { data: tasksData } = await supabase
@@ -313,25 +325,49 @@ const Dashboard = () => {
             <div className="grid gap-3 md:grid-cols-3">
               <Button
                 variant="outline"
-                className="h-20 flex-col gap-2 hover:border-primary hover:bg-primary/5"
+                className={`h-20 flex-col gap-2 relative ${
+                  todayCheckin?.data_task 
+                    ? "border-success bg-success/10" 
+                    : "hover:border-primary hover:bg-primary/5"
+                }`}
                 onClick={() => handleDailyCheckin("data")}
+                disabled={todayCheckin?.data_task}
               >
+                {todayCheckin?.data_task && (
+                  <CheckCircle2 className="h-5 w-5 text-success absolute top-2 right-2" />
+                )}
                 <Brain className="h-6 w-6 text-primary" />
                 <span>تحليل البيانات</span>
               </Button>
               <Button
                 variant="outline"
-                className="h-20 flex-col gap-2 hover:border-secondary hover:bg-secondary/5"
+                className={`h-20 flex-col gap-2 relative ${
+                  todayCheckin?.lang_task 
+                    ? "border-success bg-success/10" 
+                    : "hover:border-secondary hover:bg-secondary/5"
+                }`}
                 onClick={() => handleDailyCheckin("lang")}
+                disabled={todayCheckin?.lang_task}
               >
+                {todayCheckin?.lang_task && (
+                  <CheckCircle2 className="h-5 w-5 text-success absolute top-2 right-2" />
+                )}
                 <Globe className="h-6 w-6 text-secondary" />
                 <span>اللغة الإنجليزية</span>
               </Button>
               <Button
                 variant="outline"
-                className="h-20 flex-col gap-2 hover:border-success hover:bg-success/5"
+                className={`h-20 flex-col gap-2 relative ${
+                  todayCheckin?.soft_task 
+                    ? "border-success bg-success/10" 
+                    : "hover:border-success hover:bg-success/5"
+                }`}
                 onClick={() => handleDailyCheckin("soft")}
+                disabled={todayCheckin?.soft_task}
               >
+                {todayCheckin?.soft_task && (
+                  <CheckCircle2 className="h-5 w-5 text-success absolute top-2 right-2" />
+                )}
                 <Users className="h-6 w-6 text-success" />
                 <span>المهارات الناعمة</span>
               </Button>
