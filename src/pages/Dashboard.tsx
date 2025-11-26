@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,12 +17,14 @@ import {
   BookOpen,
   Brain,
   Globe,
-  Users
+  Users,
+  ArrowLeft
 } from "lucide-react";
 import { formatDistance } from "date-fns";
 import { ar } from "date-fns/locale";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<any>(null);
   const [tasks, setTasks] = useState<any[]>([]);
@@ -447,9 +450,18 @@ const Dashboard = () => {
                         <p className="text-sm text-muted-foreground line-clamp-2">
                           {lesson.description}
                         </p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {lesson.duration_minutes} دقيقة
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {lesson.duration_minutes} دقيقة
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => navigate(`/learning-path/${lesson.track_type}`)}
+                          >
+                            ابدأ الآن
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                          </Button>
                         </div>
                       </div>
                     </div>
