@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 import Classrooms from "./pages/Classrooms";
+import LearningPath from "./pages/LearningPath";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -81,6 +82,14 @@ const App = () => {
               element={
                 <ProtectedRoute requireAdmin>
                   <Admin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/learning-path/:trackType"
+              element={
+                <ProtectedRoute>
+                  <LearningPath />
                 </ProtectedRoute>
               }
             />
