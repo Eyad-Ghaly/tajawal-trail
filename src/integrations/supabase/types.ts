@@ -444,6 +444,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_track_progress: {
+        Args: {
+          p_track_type: Database["public"]["Enums"]["track_type"]
+          p_user_id: string
+        }
+        Returns: number
+      }
       is_admin: { Args: { user_id: string }; Returns: boolean }
     }
     Enums: {
