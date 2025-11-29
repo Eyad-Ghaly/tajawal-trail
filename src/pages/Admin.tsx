@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Users, 
   TrendingUp, 
@@ -145,6 +146,28 @@ const Admin = () => {
       loadData();
     } catch (error) {
       console.error("Error rejecting proof:", error);
+    }
+  };
+
+  const handleLevelChange = async (userId: string, newLevel: "Beginner" | "Intermediate" | "Advanced") => {
+    try {
+      await supabase
+        .from("profiles")
+        .update({ level: newLevel })
+        .eq("id", userId);
+
+      toast({
+        title: "تم التحديث ✅",
+        description: `تم تغيير المستوى إلى ${newLevel}`,
+      });
+
+      loadData();
+    } catch (error) {
+      console.error("Error updating level:", error);
+      toast({
+        title: "حدث خطأ",
+        variant: "destructive",
+      });
     }
   };
 
@@ -300,9 +323,19 @@ const Admin = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={getLevelColor(learner.level)}>
-                            {learner.level}
-                          </Badge>
+                          <Select
+                            value={learner.level}
+                            onValueChange={(value: "Beginner" | "Intermediate" | "Advanced") => handleLevelChange(learner.id, value)}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Beginner">مبتدئ</SelectItem>
+                              <SelectItem value="Intermediate">متوسط</SelectItem>
+                              <SelectItem value="Advanced">متقدم</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">

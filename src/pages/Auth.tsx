@@ -7,12 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, LogIn, UserPlus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [level, setLevel] = useState<"Beginner" | "Intermediate" | "Advanced">("Beginner");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -44,6 +46,7 @@ const Auth = () => {
             data: {
               full_name: fullName,
               role: "learner",
+              level: level,
             },
             emailRedirectTo: `${window.location.origin}/dashboard`,
           },
@@ -94,18 +97,38 @@ const Auth = () => {
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-4">
             {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">الاسم الكامل</Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="أدخل اسمك الكامل"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required={!isLogin}
-                  disabled={loading}
-                />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">الاسم الكامل</Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="أدخل اسمك الكامل"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required={!isLogin}
+                    disabled={loading}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="level">المستوى</Label>
+                  <Select
+                    value={level}
+                    onValueChange={(value: "Beginner" | "Intermediate" | "Advanced") => setLevel(value)}
+                    disabled={loading}
+                  >
+                    <SelectTrigger id="level">
+                      <SelectValue placeholder="اختر مستواك" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Beginner">مبتدئ</SelectItem>
+                      <SelectItem value="Intermediate">متوسط</SelectItem>
+                      <SelectItem value="Advanced">متقدم</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
             )}
             
             <div className="space-y-2">
