@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Trash2 } from 'lucide-react';
+import { Send, Trash2, Image as ImageIcon, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -13,6 +13,7 @@ interface Message {
   id: string;
   user_id: string;
   message: string;
+  image_url: string | null;
   created_at: string;
   profiles: {
     full_name: string;
@@ -31,8 +32,11 @@ export function ChatRoom({ lessonId, levelClassroom, title }: ChatRoomProps) {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -105,14 +109,59 @@ export function ChatRoom({ lessonId, levelClassroom, title }: ChatRoomProps) {
     }
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'خطأ',
+          description: 'حجم الصورة يجب أن يكون أقل من 5 ميجابايت',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setSelectedImage(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const sendMessage = async () => {
-    if (!newMessage.trim() || !currentUserId) return;
+    if ((!newMessage.trim() && !selectedImage) || !currentUserId) return;
 
     setLoading(true);
     try {
+      let imageUrl: string | null = null;
+
+      // Upload image if selected
+      if (selectedImage) {
+        const fileExt = selectedImage.name.split('.').pop();
+        const fileName = `${currentUserId}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('chat-images')
+          .upload(fileName, selectedImage);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('chat-images')
+          .getPublicUrl(fileName);
+
+        imageUrl = publicUrl;
+      }
+
       const messageData: any = {
         user_id: currentUserId,
-        message: newMessage.trim(),
+        message: newMessage.trim() || '',
+        image_url: imageUrl,
       };
 
       if (lessonId) {
@@ -128,6 +177,7 @@ export function ChatRoom({ lessonId, levelClassroom, title }: ChatRoomProps) {
       if (error) throw error;
 
       setNewMessage('');
+      removeImage();
       toast({
         title: 'تم الإرسال',
         description: 'تم إرسال رسالتك بنجاح',
@@ -214,7 +264,16 @@ export function ChatRoom({ lessonId, levelClassroom, title }: ChatRoomProps) {
                       : 'bg-muted'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                  {msg.image_url && (
+                    <img 
+                      src={msg.image_url} 
+                      alt="صورة مرفقة"
+                      className="max-w-xs rounded-lg mb-2"
+                    />
+                  )}
+                  {msg.message && (
+                    <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -224,7 +283,40 @@ export function ChatRoom({ lessonId, levelClassroom, title }: ChatRoomProps) {
       </ScrollArea>
 
       <div className="p-4 border-t">
+        {imagePreview && (
+          <div className="mb-2 relative inline-block">
+            <img 
+              src={imagePreview} 
+              alt="معاينة"
+              className="max-h-32 rounded-lg"
+            />
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+              onClick={removeImage}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
         <div className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageSelect}
+          />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loading}
+            className="shrink-0"
+          >
+            <ImageIcon className="h-4 w-4" />
+          </Button>
           <Textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
@@ -240,7 +332,7 @@ export function ChatRoom({ lessonId, levelClassroom, title }: ChatRoomProps) {
           />
           <Button
             onClick={sendMessage}
-            disabled={loading || !newMessage.trim()}
+            disabled={loading || (!newMessage.trim() && !selectedImage)}
             size="icon"
             className="h-auto"
           >
