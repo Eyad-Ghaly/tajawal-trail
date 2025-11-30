@@ -11,6 +11,7 @@ import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 import Classrooms from "./pages/Classrooms";
 import LearningPath from "./pages/LearningPath";
+import TaskDetails from "./pages/TaskDetails";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -90,6 +91,14 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <LearningPath />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/task/:taskId"
+              element={
+                <ProtectedRoute>
+                  <TaskDetails />
                 </ProtectedRoute>
               }
             />

@@ -60,26 +60,41 @@ const Dashboard = () => {
         .maybeSingle();
       setTodayCheckin(checkinData);
 
-      // Load user tasks
+      // Load user tasks - filter by user level
       const { data: tasksData } = await supabase
         .from("user_tasks")
         .select(`
           *,
-          task:tasks(*)
+          task:tasks!inner(*)
         `)
         .eq("user_id", user.id)
+        .eq("task.published", true)
         .order("created_at", { ascending: false })
         .limit(6);
-      setTasks(tasksData || []);
+      
+      // Filter tasks by user level on client side if needed
+      const filteredTasks = tasksData?.filter((userTask: any) => {
+        const task = userTask.task;
+        // You can add level-specific filtering here if tasks have level field
+        return true;
+      }) || [];
+      setTasks(filteredTasks);
 
-      // Load lessons
+      // Load lessons - filter by user level
       const { data: lessonsData } = await supabase
         .from("lessons")
         .select("*")
         .eq("published", true)
         .order("order_index")
         .limit(4);
-      setLessons(lessonsData || []);
+      
+      // Filter lessons based on user level
+      const filteredLessons = lessonsData?.filter((lesson: any) => {
+        // For now, show all published lessons
+        // You can add level-specific logic here
+        return true;
+      }) || [];
+      setLessons(filteredLessons);
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -397,7 +412,8 @@ const Dashboard = () => {
                   tasks.map((task) => (
                     <div
                       key={task.id}
-                      className="flex items-start gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                      className="flex items-start gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/task/${task.task?.id}`)}
                     >
                       <div className="mt-1">
                         {getTrackIcon(task.task?.track_type)}
