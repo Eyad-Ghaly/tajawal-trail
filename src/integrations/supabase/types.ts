@@ -181,6 +181,7 @@ export type Database = {
           description: string | null
           duration_minutes: number | null
           id: string
+          level: Database["public"]["Enums"]["user_level"] | null
           order_index: number | null
           published: boolean | null
           title: string
@@ -193,6 +194,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number | null
           id?: string
+          level?: Database["public"]["Enums"]["user_level"] | null
           order_index?: number | null
           published?: boolean | null
           title: string
@@ -205,6 +207,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number | null
           id?: string
+          level?: Database["public"]["Enums"]["user_level"] | null
           order_index?: number | null
           published?: boolean | null
           title?: string
@@ -271,6 +274,7 @@ export type Database = {
           deadline: string | null
           description: string | null
           id: string
+          level: Database["public"]["Enums"]["user_level"] | null
           published: boolean | null
           resource_link: string | null
           title: string
@@ -283,6 +287,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           id?: string
+          level?: Database["public"]["Enums"]["user_level"] | null
           published?: boolean | null
           resource_link?: string | null
           title: string
@@ -295,6 +300,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           id?: string
+          level?: Database["public"]["Enums"]["user_level"] | null
           published?: boolean | null
           resource_link?: string | null
           title?: string

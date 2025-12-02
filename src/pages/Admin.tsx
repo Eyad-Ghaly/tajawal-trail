@@ -15,7 +15,9 @@ import {
   Eye,
   UserCheck,
   UserX,
-  FileCheck
+  FileCheck,
+  BookOpen,
+  ListTodo
 } from "lucide-react";
 import {
   Table,
@@ -38,6 +40,8 @@ const Admin = () => {
   });
   const [learners, setLearners] = useState<any[]>([]);
   const [pendingProofs, setPendingProofs] = useState<any[]>([]);
+  const [lessons, setLessons] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -65,6 +69,20 @@ const Admin = () => {
         .eq("status", "submitted")
         .order("submitted_at", { ascending: false });
       setPendingProofs(proofsData || []);
+
+      // Load lessons
+      const { data: lessonsData } = await supabase
+        .from("lessons")
+        .select("*")
+        .order("order_index");
+      setLessons(lessonsData || []);
+
+      // Load tasks
+      const { data: tasksData } = await supabase
+        .from("tasks")
+        .select("*")
+        .order("created_at", { ascending: false });
+      setTasks(tasksData || []);
 
       // Calculate stats
       const totalLearners = learnersData?.length || 0;
@@ -188,6 +206,68 @@ const Admin = () => {
     }
   };
 
+  const handleLessonLevelChange = async (lessonId: string, newLevel: "Beginner" | "Intermediate" | "Advanced" | null) => {
+    try {
+      await supabase
+        .from("lessons")
+        .update({ level: newLevel })
+        .eq("id", lessonId);
+
+      toast({
+        title: "تم التحديث ✅",
+        description: `تم تغيير مستوى الدرس`,
+      });
+
+      loadData();
+    } catch (error) {
+      console.error("Error updating lesson level:", error);
+      toast({
+        title: "حدث خطأ",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleTaskLevelChange = async (taskId: string, newLevel: "Beginner" | "Intermediate" | "Advanced" | null) => {
+    try {
+      await supabase
+        .from("tasks")
+        .update({ level: newLevel })
+        .eq("id", taskId);
+
+      toast({
+        title: "تم التحديث ✅",
+        description: `تم تغيير مستوى المهمة`,
+      });
+
+      loadData();
+    } catch (error) {
+      console.error("Error updating task level:", error);
+      toast({
+        title: "حدث خطأ",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getTrackLabel = (trackType: string) => {
+    switch (trackType) {
+      case "data": return "تحليل البيانات";
+      case "english": return "اللغة الإنجليزية";
+      case "soft": return "المهارات الناعمة";
+      default: return trackType;
+    }
+  };
+
+  const getLevelLabel = (level: string | null) => {
+    switch (level) {
+      case "Beginner": return "مبتدئ";
+      case "Intermediate": return "متوسط";
+      case "Advanced": return "متقدم";
+      default: return "الكل";
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -271,7 +351,7 @@ const Admin = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="learners" className="space-y-4">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="learners">المتعلمين</TabsTrigger>
             <TabsTrigger value="proofs">
               مراجعة الإثباتات
@@ -280,6 +360,14 @@ const Admin = () => {
                   {stats.pendingTasks}
                 </Badge>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="lessons">
+              <BookOpen className="h-4 w-4 ml-1" />
+              الدروس
+            </TabsTrigger>
+            <TabsTrigger value="tasks">
+              <ListTodo className="h-4 w-4 ml-1" />
+              المهام
             </TabsTrigger>
           </TabsList>
 
@@ -455,6 +543,132 @@ const Admin = () => {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="lessons" className="space-y-4">
+            <Card className="border-none shadow-lg">
+              <CardHeader>
+                <CardTitle>إدارة الدروس</CardTitle>
+                <CardDescription>
+                  تحديد المستوى لكل درس ليظهر للمتعلمين المناسبين
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>الدرس</TableHead>
+                      <TableHead>المسار</TableHead>
+                      <TableHead>المستوى</TableHead>
+                      <TableHead>الحالة</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lessons.map((lesson) => (
+                      <TableRow key={lesson.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{lesson.title}</div>
+                            <div className="text-sm text-muted-foreground line-clamp-1">
+                              {lesson.description}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{getTrackLabel(lesson.track_type)}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={lesson.level || "all"}
+                            onValueChange={(value) => handleLessonLevelChange(lesson.id, value === "all" ? null : value as "Beginner" | "Intermediate" | "Advanced")}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">الكل</SelectItem>
+                              <SelectItem value="Beginner">مبتدئ</SelectItem>
+                              <SelectItem value="Intermediate">متوسط</SelectItem>
+                              <SelectItem value="Advanced">متقدم</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={lesson.published ? "bg-success text-white" : "bg-muted"}>
+                            {lesson.published ? "منشور" : "مخفي"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="tasks" className="space-y-4">
+            <Card className="border-none shadow-lg">
+              <CardHeader>
+                <CardTitle>إدارة المهام</CardTitle>
+                <CardDescription>
+                  تحديد المستوى لكل مهمة لتظهر للمتعلمين المناسبين
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>المهمة</TableHead>
+                      <TableHead>المسار</TableHead>
+                      <TableHead>XP</TableHead>
+                      <TableHead>المستوى</TableHead>
+                      <TableHead>الحالة</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tasks.map((task) => (
+                      <TableRow key={task.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{task.title}</div>
+                            <div className="text-sm text-muted-foreground line-clamp-1">
+                              {task.description}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{getTrackLabel(task.track_type)}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium text-primary">{task.xp} XP</span>
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={task.level || "all"}
+                            onValueChange={(value) => handleTaskLevelChange(task.id, value === "all" ? null : value as "Beginner" | "Intermediate" | "Advanced")}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">الكل</SelectItem>
+                              <SelectItem value="Beginner">مبتدئ</SelectItem>
+                              <SelectItem value="Intermediate">متوسط</SelectItem>
+                              <SelectItem value="Advanced">متقدم</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={task.published ? "bg-success text-white" : "bg-muted"}>
+                            {task.published ? "منشور" : "مخفي"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>

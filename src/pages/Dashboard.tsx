@@ -72,11 +72,12 @@ const Dashboard = () => {
         .order("created_at", { ascending: false })
         .limit(6);
       
-      // Filter tasks by user level on client side if needed
+      // Filter tasks by user level
+      const userLevel = profileData?.level;
       const filteredTasks = tasksData?.filter((userTask: any) => {
         const task = userTask.task;
-        // You can add level-specific filtering here if tasks have level field
-        return true;
+        // Show tasks that match user level or have no level set
+        return !task.level || task.level === userLevel;
       }) || [];
       setTasks(filteredTasks);
 
@@ -86,14 +87,13 @@ const Dashboard = () => {
         .select("*")
         .eq("published", true)
         .order("order_index")
-        .limit(4);
+        .limit(10);
       
       // Filter lessons based on user level
       const filteredLessons = lessonsData?.filter((lesson: any) => {
-        // For now, show all published lessons
-        // You can add level-specific logic here
-        return true;
-      }) || [];
+        // Show lessons that match user level or have no level set
+        return !lesson.level || lesson.level === userLevel;
+      }).slice(0, 4) || [];
       setLessons(filteredLessons);
     } catch (error) {
       console.error("Error loading data:", error);
