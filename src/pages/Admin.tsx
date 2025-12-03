@@ -17,7 +17,9 @@ import {
   UserX,
   FileCheck,
   BookOpen,
-  ListTodo
+  ListTodo,
+  UserPlus,
+  MapPin
 } from "lucide-react";
 import {
   Table,
@@ -37,8 +39,10 @@ const Admin = () => {
     avgProgress: 0,
     totalXP: 0,
     pendingTasks: 0,
+    pendingUsers: 0,
   });
   const [learners, setLearners] = useState<any[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<any[]>([]);
   const [pendingProofs, setPendingProofs] = useState<any[]>([]);
   const [lessons, setLessons] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
@@ -50,13 +54,23 @@ const Admin = () => {
 
   const loadData = async () => {
     try {
-      // Load learners
+      // Load approved learners only
       const { data: learnersData } = await supabase
         .from("profiles")
         .select("*")
         .eq("role", "learner")
+        .eq("status", "approved")
         .order("xp_total", { ascending: false });
       setLearners(learnersData || []);
+
+      // Load pending users
+      const { data: pendingUsersData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("role", "learner")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+      setPendingUsers(pendingUsersData || []);
 
       // Load pending proofs
       const { data: proofsData } = await supabase
@@ -91,12 +105,14 @@ const Admin = () => {
         : 0;
       const totalXP = learnersData?.reduce((sum, l) => sum + (l.xp_total || 0), 0) || 0;
       const pendingTasks = proofsData?.length || 0;
+      const pendingUsersCount = pendingUsersData?.length || 0;
 
       setStats({
         totalLearners,
         avgProgress,
         totalXP,
         pendingTasks,
+        pendingUsers: pendingUsersCount,
       });
     } catch (error) {
       console.error("Error loading data:", error);
@@ -259,6 +275,50 @@ const Admin = () => {
     }
   };
 
+  const handleApproveUser = async (userId: string, level: "Beginner" | "Intermediate" | "Advanced") => {
+    try {
+      await supabase
+        .from("profiles")
+        .update({ status: "approved", level: level })
+        .eq("id", userId);
+
+      toast({
+        title: "تم قبول المستخدم ✅",
+        description: `تم تفعيل الحساب وتحديد المستوى`,
+      });
+
+      loadData();
+    } catch (error) {
+      console.error("Error approving user:", error);
+      toast({
+        title: "حدث خطأ",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRejectUser = async (userId: string) => {
+    try {
+      await supabase
+        .from("profiles")
+        .update({ status: "rejected" })
+        .eq("id", userId);
+
+      toast({
+        title: "تم رفض المستخدم",
+        variant: "destructive",
+      });
+
+      loadData();
+    } catch (error) {
+      console.error("Error rejecting user:", error);
+      toast({
+        title: "حدث خطأ",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getLevelLabel = (level: string | null) => {
     switch (level) {
       case "Beginner": return "مبتدئ";
@@ -350,8 +410,17 @@ const Admin = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="learners" className="space-y-4">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
+        <Tabs defaultValue="pending-users" className="space-y-4">
+          <TabsList className="grid w-full max-w-3xl grid-cols-5">
+            <TabsTrigger value="pending-users">
+              <UserPlus className="h-4 w-4 ml-1" />
+              طلبات الانضمام
+              {stats.pendingUsers > 0 && (
+                <Badge variant="destructive" className="mr-2">
+                  {stats.pendingUsers}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="learners">المتعلمين</TabsTrigger>
             <TabsTrigger value="proofs">
               مراجعة الإثباتات
@@ -370,6 +439,96 @@ const Admin = () => {
               المهام
             </TabsTrigger>
           </TabsList>
+
+          {/* Pending Users Tab */}
+          <TabsContent value="pending-users" className="space-y-4">
+            <Card className="border-none shadow-lg">
+              <CardHeader>
+                <CardTitle>طلبات الانضمام المعلقة</CardTitle>
+                <CardDescription>
+                  مراجعة وقبول أو رفض طلبات التسجيل الجديدة
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pendingUsers.length === 0 ? (
+                  <div className="text-center py-12">
+                    <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">
+                      لا توجد طلبات معلقة
+                    </h3>
+                    <p className="text-muted-foreground">
+                      تمت مراجعة جميع طلبات الانضمام
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {pendingUsers.map((user) => (
+                      <div
+                        key={user.id}
+                        className="border rounded-lg p-4 space-y-3 hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-3 flex-1">
+                            <Avatar>
+                              <AvatarImage src={user.avatar_url} />
+                              <AvatarFallback className="bg-primary text-primary-foreground">
+                                {user.full_name?.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <h4 className="font-medium">{user.full_name}</h4>
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                                {user.governorate && (
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {user.governorate}
+                                  </div>
+                                )}
+                                {user.membership_number && (
+                                  <span>رقم العضوية: {user.membership_number}</span>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                تاريخ التسجيل: {new Date(user.created_at).toLocaleDateString("ar-SA")}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex gap-2">
+                              <Select
+                                defaultValue="Beginner"
+                                onValueChange={(value: "Beginner" | "Intermediate" | "Advanced") => 
+                                  handleApproveUser(user.id, value)
+                                }
+                              >
+                                <SelectTrigger className="w-32">
+                                  <SelectValue placeholder="قبول كـ" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Beginner">قبول كمبتدئ</SelectItem>
+                                  <SelectItem value="Intermediate">قبول كمتوسط</SelectItem>
+                                  <SelectItem value="Advanced">قبول كمتقدم</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleRejectUser(user.id)}
+                                className="gap-2"
+                              >
+                                <UserX className="h-4 w-4" />
+                                رفض
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="learners" className="space-y-4">
             <Card className="border-none shadow-lg">

@@ -224,12 +224,16 @@ export type Database = {
           data_progress: number | null
           english_progress: number | null
           full_name: string
+          governorate: string | null
           id: string
           join_date: string | null
           level: Database["public"]["Enums"]["user_level"] | null
+          membership_number: string | null
           overall_progress: number | null
+          placement_test_url: string | null
           role: Database["public"]["Enums"]["app_role"] | null
           soft_progress: number | null
+          status: string | null
           streak_days: number | null
           updated_at: string | null
           xp_total: number | null
@@ -240,12 +244,16 @@ export type Database = {
           data_progress?: number | null
           english_progress?: number | null
           full_name: string
+          governorate?: string | null
           id: string
           join_date?: string | null
           level?: Database["public"]["Enums"]["user_level"] | null
+          membership_number?: string | null
           overall_progress?: number | null
+          placement_test_url?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           soft_progress?: number | null
+          status?: string | null
           streak_days?: number | null
           updated_at?: string | null
           xp_total?: number | null
@@ -256,12 +264,16 @@ export type Database = {
           data_progress?: number | null
           english_progress?: number | null
           full_name?: string
+          governorate?: string | null
           id?: string
           join_date?: string | null
           level?: Database["public"]["Enums"]["user_level"] | null
+          membership_number?: string | null
           overall_progress?: number | null
+          placement_test_url?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           soft_progress?: number | null
+          status?: string | null
           streak_days?: number | null
           updated_at?: string | null
           xp_total?: number | null

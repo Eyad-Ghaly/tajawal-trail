@@ -6,15 +6,48 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, LogIn, UserPlus } from "lucide-react";
+import { Loader2, LogIn, UserPlus, ExternalLink } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const GOVERNORATES = [
+  "القاهرة",
+  "الجيزة",
+  "الإسكندرية",
+  "الدقهلية",
+  "البحر الأحمر",
+  "البحيرة",
+  "الفيوم",
+  "الغربية",
+  "الإسماعيلية",
+  "المنوفية",
+  "المنيا",
+  "القليوبية",
+  "الوادي الجديد",
+  "السويس",
+  "أسوان",
+  "أسيوط",
+  "بني سويف",
+  "بورسعيد",
+  "دمياط",
+  "الشرقية",
+  "جنوب سيناء",
+  "كفر الشيخ",
+  "مطروح",
+  "الأقصر",
+  "قنا",
+  "شمال سيناء",
+  "سوهاج"
+];
+
+const PLACEMENT_TEST_URL = "https://forms.google.com/your-placement-test"; // يمكن تغييره لاحقاً
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [level, setLevel] = useState<"Beginner" | "Intermediate" | "Advanced">("Beginner");
+  const [governorate, setGovernorate] = useState("");
+  const [membershipNumber, setMembershipNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -39,6 +72,17 @@ const Auth = () => {
         
         navigate("/dashboard");
       } else {
+        // Validation
+        if (!fullName.trim()) {
+          throw new Error("يرجى إدخال الاسم الكامل");
+        }
+        if (!governorate) {
+          throw new Error("يرجى اختيار المحافظة");
+        }
+        if (!membershipNumber.trim()) {
+          throw new Error("يرجى إدخال رقم العضوية");
+        }
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -46,7 +90,9 @@ const Auth = () => {
             data: {
               full_name: fullName,
               role: "learner",
-              level: level,
+              level: "Beginner",
+              governorate: governorate,
+              membership_number: membershipNumber,
             },
             emailRedirectTo: `${window.location.origin}/dashboard`,
           },
@@ -56,7 +102,7 @@ const Auth = () => {
         
         toast({
           title: "تم إنشاء الحساب!",
-          description: "يمكنك الآن تسجيل الدخول",
+          description: "حسابك معلق حالياً وسيتم مراجعته من قبل الإدارة",
         });
         
         setIsLogin(true);
@@ -112,21 +158,51 @@ const Auth = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="level">المستوى</Label>
+                  <Label htmlFor="governorate">المحافظة</Label>
                   <Select
-                    value={level}
-                    onValueChange={(value: "Beginner" | "Intermediate" | "Advanced") => setLevel(value)}
+                    value={governorate}
+                    onValueChange={setGovernorate}
                     disabled={loading}
                   >
-                    <SelectTrigger id="level">
-                      <SelectValue placeholder="اختر مستواك" />
+                    <SelectTrigger id="governorate">
+                      <SelectValue placeholder="اختر محافظتك" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Beginner">مبتدئ</SelectItem>
-                      <SelectItem value="Intermediate">متوسط</SelectItem>
-                      <SelectItem value="Advanced">متقدم</SelectItem>
+                      {GOVERNORATES.map((gov) => (
+                        <SelectItem key={gov} value={gov}>{gov}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="membershipNumber">رقم العضوية</Label>
+                  <Input
+                    id="membershipNumber"
+                    type="text"
+                    placeholder="أدخل رقم العضوية"
+                    value={membershipNumber}
+                    onChange={(e) => setMembershipNumber(e.target.value)}
+                    required={!isLogin}
+                    disabled={loading}
+                  />
+                </div>
+
+                {/* Placement Test Link */}
+                <div className="bg-muted/50 p-4 rounded-lg border">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    اختبار تحديد المستوى (اختياري)
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(PLACEMENT_TEST_URL, '_blank')}
+                    className="gap-2"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    خذ اختبار تحديد المستوى
+                  </Button>
                 </div>
               </>
             )}
