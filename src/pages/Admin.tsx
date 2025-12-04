@@ -19,8 +19,11 @@ import {
   BookOpen,
   ListTodo,
   UserPlus,
-  MapPin
+  MapPin,
+  Camera
 } from "lucide-react";
+import { UserCustomLessons } from "@/components/admin/UserCustomLessons";
+import { UserAvatarUpload } from "@/components/admin/UserAvatarUpload";
 import {
   Table,
   TableBody,
@@ -555,12 +558,12 @@ const Admin = () => {
                       <TableRow key={learner.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarImage src={learner.avatar_url} />
-                              <AvatarFallback className="bg-primary text-primary-foreground">
-                                {learner.full_name?.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
+                            <UserAvatarUpload
+                              userId={learner.id}
+                              userName={learner.full_name}
+                              currentAvatarUrl={learner.avatar_url}
+                              onAvatarUpdated={loadData}
+                            />
                             <div>
                               <div className="font-medium">{learner.full_name}</div>
                               <div className="text-sm text-muted-foreground">
@@ -603,14 +606,20 @@ const Admin = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => window.location.href = `/profile?userId=${learner.id}`}
-                          >
-                            <Eye className="h-4 w-4 ml-2" />
-                            عرض الملف
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <UserCustomLessons
+                              userId={learner.id}
+                              userName={learner.full_name}
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.location.href = `/profile?userId=${learner.id}`}
+                            >
+                              <Eye className="h-4 w-4 ml-2" />
+                              عرض الملف
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   TrendingUp, 
   Award, 
@@ -15,7 +16,8 @@ import {
   Globe,
   Users,
   CheckCircle2,
-  Clock
+  Clock,
+  BookOpen
 } from "lucide-react";
 
 const Profile = () => {
@@ -24,6 +26,7 @@ const Profile = () => {
   const [profile, setProfile] = useState<any>(null);
   const [activities, setActivities] = useState<any[]>([]);
   const [userTasks, setUserTasks] = useState<any[]>([]);
+  const [customLessons, setCustomLessons] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -69,6 +72,14 @@ const Profile = () => {
         .order("created_at", { ascending: false })
         .limit(10);
       setUserTasks(tasksData || []);
+
+      // Load custom lessons
+      const { data: customLessonsData } = await supabase
+        .from("custom_lessons")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      setCustomLessons(customLessonsData || []);
     } catch (error) {
       console.error("Error loading profile:", error);
     } finally {
@@ -218,6 +229,69 @@ const Profile = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Custom Lessons Section */}
+        {customLessons.length > 0 && (
+          <Card className="border-none shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-warning" />
+                الدروس المخصصة
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Progress bar */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>التقدم</span>
+                    <span className="font-medium">
+                      {customLessons.filter(l => l.completed).length} / {customLessons.length}
+                      {" "}({Math.round((customLessons.filter(l => l.completed).length / customLessons.length) * 100)}%)
+                    </span>
+                  </div>
+                  <Progress 
+                    value={(customLessons.filter(l => l.completed).length / customLessons.length) * 100} 
+                  />
+                </div>
+                
+                {/* Lessons list */}
+                <div className="grid gap-3 md:grid-cols-2">
+                  {customLessons.map((lesson) => (
+                    <div
+                      key={lesson.id}
+                      className={`p-3 rounded-lg border ${lesson.completed ? 'bg-success/10 border-success' : ''}`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <CheckCircle2 
+                          className={`h-4 w-4 mt-0.5 ${lesson.completed ? 'text-success' : 'text-muted-foreground'}`} 
+                        />
+                        <div className="flex-1">
+                          <h4 className="font-medium text-sm">{lesson.title}</h4>
+                          {lesson.description && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {lesson.description}
+                            </p>
+                          )}
+                          {lesson.video_link && (
+                            <a
+                              href={lesson.video_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline mt-1 inline-block"
+                            >
+                              رابط الفيديو
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Tasks History */}

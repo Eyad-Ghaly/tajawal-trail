@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { CustomLessonsCard } from "@/components/CustomLessonsCard";
 import { 
   TrendingUp, 
   Target, 
@@ -29,6 +30,7 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<any>(null);
   const [tasks, setTasks] = useState<any[]>([]);
   const [lessons, setLessons] = useState<any[]>([]);
+  const [customLessons, setCustomLessons] = useState<any[]>([]);
   const [todayCheckin, setTodayCheckin] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -95,6 +97,14 @@ const Dashboard = () => {
         return !lesson.level || lesson.level === userLevel;
       }).slice(0, 4) || [];
       setLessons(filteredLessons);
+
+      // Load custom lessons for this user
+      const { data: customLessonsData } = await supabase
+        .from("custom_lessons")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      setCustomLessons(customLessonsData || []);
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -330,6 +340,26 @@ const Dashboard = () => {
               </div>
               <Progress value={profile?.soft_progress || 0} className="h-2" />
             </div>
+
+            {/* Custom Lessons Progress */}
+            {customLessons.length > 0 && (
+              <div className="space-y-2 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-warning" />
+                    <span className="font-medium">الدروس المخصصة</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {customLessons.filter(l => l.completed).length} / {customLessons.length}
+                    {" "}({Math.round((customLessons.filter(l => l.completed).length / customLessons.length) * 100)}%)
+                  </span>
+                </div>
+                <Progress 
+                  value={(customLessons.filter(l => l.completed).length / customLessons.length) * 100} 
+                  className="h-2" 
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -487,6 +517,9 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Custom Lessons */}
+        <CustomLessonsCard lessons={customLessons} onUpdate={loadData} />
       </div>
     </div>
   );
