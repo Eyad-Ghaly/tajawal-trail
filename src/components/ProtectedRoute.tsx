@@ -48,14 +48,23 @@ export const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRout
   };
 
   const checkUserRole = async (userId: string) => {
-    const { data } = await supabase
+    // Fetch profile status
+    const { data: profileData } = await supabase
       .from("profiles")
-      .select("role, status")
+      .select("status")
       .eq("id", userId)
       .single();
     
-    setIsAdmin(data?.role === "admin");
-    setStatus(data?.status || null);
+    // Check if user has admin role from user_roles table
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    
+    setIsAdmin(!!roleData);
+    setStatus(profileData?.status || null);
   };
 
   const handleLogout = async () => {

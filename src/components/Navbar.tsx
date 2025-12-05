@@ -19,6 +19,7 @@ export const Navbar = () => {
   const location = useLocation();
   const { toast } = useToast();
   const [profile, setProfile] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -29,12 +30,22 @@ export const Navbar = () => {
   const loadProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data } = await supabase
+      // Fetch profile data
+      const { data: profileData } = await supabase
         .from("profiles")
-        .select("*")
+        .select("full_name, avatar_url")
         .eq("id", user.id)
         .single();
-      setProfile(data);
+      setProfile(profileData);
+      
+      // Check if user has admin role from user_roles table
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      setIsAdmin(!!roleData);
     }
   };
 
@@ -98,7 +109,7 @@ export const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          {profile?.role === "admin" && (
+          {isAdmin && (
             <Button
               variant="ghost"
               onClick={() => navigate("/admin")}
@@ -127,7 +138,7 @@ export const Navbar = () => {
               <div className="flex items-center justify-start gap-2 p-2">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium">{profile?.full_name}</p>
-                  <p className="text-xs text-muted-foreground">{profile?.role === "admin" ? "مدير" : "متعلم"}</p>
+                  <p className="text-xs text-muted-foreground">{isAdmin ? "مدير" : "متعلم"}</p>
                 </div>
               </div>
               <DropdownMenuSeparator />
