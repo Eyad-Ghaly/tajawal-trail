@@ -9,16 +9,20 @@ import { Send, Trash2, Image as ImageIcon, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
+interface PublicProfile {
+  id: string;
+  full_name: string;
+  avatar_url: string | null;
+  level: string | null;
+}
+
 interface Message {
   id: string;
   user_id: string;
   message: string;
   image_url: string | null;
   created_at: string;
-  profiles: {
-    full_name: string;
-    avatar_url: string | null;
-  };
+  profile?: PublicProfile;
 }
 
 interface ChatRoomProps {
@@ -80,13 +84,7 @@ export function ChatRoom({ lessonId, levelClassroom, title }: ChatRoomProps) {
     try {
       let query = supabase
         .from('chat_messages')
-        .select(`
-          *,
-          profiles:user_id (
-            full_name,
-            avatar_url
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: true });
 
       if (lessonId) {
@@ -95,10 +93,39 @@ export function ChatRoom({ lessonId, levelClassroom, title }: ChatRoomProps) {
         query = query.eq('level_classroom', levelClassroom);
       }
 
-      const { data, error } = await query;
+      const { data: messagesData, error: messagesError } = await query;
 
-      if (error) throw error;
-      setMessages(data || []);
+      if (messagesError) throw messagesError;
+
+      if (!messagesData || messagesData.length === 0) {
+        setMessages([]);
+        return;
+      }
+
+      // Get unique user IDs from messages
+      const userIds = [...new Set(messagesData.map(msg => msg.user_id))];
+
+      // Fetch public profiles for these users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('public_profiles')
+        .select('*')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of profiles by user ID
+      const profilesMap = new Map<string, PublicProfile>();
+      profilesData?.forEach(profile => {
+        profilesMap.set(profile.id, profile);
+      });
+
+      // Combine messages with profiles
+      const messagesWithProfiles: Message[] = messagesData.map(msg => ({
+        ...msg,
+        profile: profilesMap.get(msg.user_id),
+      }));
+
+      setMessages(messagesWithProfiles);
     } catch (error) {
       console.error('Error fetching messages:', error);
       toast({
@@ -234,14 +261,14 @@ export function ChatRoom({ lessonId, levelClassroom, title }: ChatRoomProps) {
             >
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                 <span className="text-sm font-medium">
-                  {msg.profiles?.full_name?.charAt(0) || '؟'}
+                  {msg.profile?.full_name?.charAt(0) || '؟'}
                 </span>
               </div>
               
               <div className={`flex-1 ${msg.user_id === currentUserId ? 'text-right' : ''}`}>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm font-medium">
-                    {msg.profiles?.full_name}
+                    {msg.profile?.full_name || 'مستخدم'}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {format(new Date(msg.created_at), 'HH:mm', { locale: ar })}
