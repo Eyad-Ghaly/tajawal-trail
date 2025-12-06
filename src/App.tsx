@@ -12,6 +12,7 @@ import Profile from "./pages/Profile";
 import Classrooms from "./pages/Classrooms";
 import LearningPath from "./pages/LearningPath";
 import TaskDetails from "./pages/TaskDetails";
+import UpdatePassword from "./pages/UpdatePassword";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -54,6 +55,7 @@ const App = () => {
               }
             />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/update-password" element={<UpdatePassword />} />
             <Route
               path="/dashboard"
               element={
