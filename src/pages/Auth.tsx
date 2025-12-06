@@ -110,7 +110,7 @@ const Auth = () => {
         setMode("login");
       } else if (mode === "forgot-password") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth`,
+          redirectTo: `${window.location.origin}/update-password`,
         });
         
         if (error) throw error;
