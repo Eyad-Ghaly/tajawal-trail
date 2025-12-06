@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, LogIn, UserPlus, ExternalLink } from "lucide-react";
+import { Loader2, LogIn, UserPlus, ExternalLink, KeyRound, ArrowRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const GOVERNORATES = [
@@ -41,8 +41,10 @@ const GOVERNORATES = [
 
 const PLACEMENT_TEST_URL = "https://forms.google.com/your-placement-test"; // يمكن تغييره لاحقاً
 
+type AuthMode = "login" | "signup" | "forgot-password";
+
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -57,7 +59,7 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      if (isLogin) {
+      if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -71,7 +73,7 @@ const Auth = () => {
         });
         
         navigate("/dashboard");
-      } else {
+      } else if (mode === "signup") {
         // Validation
         if (!fullName.trim()) {
           throw new Error("يرجى إدخال الاسم الكامل");
@@ -105,7 +107,20 @@ const Auth = () => {
           description: "حسابك معلق حالياً وسيتم مراجعته من قبل الإدارة",
         });
         
-        setIsLogin(true);
+        setMode("login");
+      } else if (mode === "forgot-password") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth`,
+        });
+        
+        if (error) throw error;
+        
+        toast({
+          title: "تم إرسال الرابط!",
+          description: "تحقق من بريدك الإلكتروني لإعادة تعيين كلمة المرور",
+        });
+        
+        setMode("login");
       }
     } catch (error: any) {
       toast({
@@ -118,31 +133,43 @@ const Auth = () => {
     }
   };
 
+  const getTitle = () => {
+    switch (mode) {
+      case "login": return "مرحباً بعودتك! سجل دخولك للمتابعة";
+      case "signup": return "انضم إلينا وابدأ رحلة التطوير";
+      case "forgot-password": return "أدخل بريدك الإلكتروني لاستعادة كلمة المرور";
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <svg
-                className="w-10 h-10 text-primary"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
-              </svg>
+              {mode === "forgot-password" ? (
+                <KeyRound className="w-10 h-10 text-primary" />
+              ) : (
+                <svg
+                  className="w-10 h-10 text-primary"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
+                </svg>
+              )}
             </div>
           </div>
           <CardTitle className="text-3xl font-bold text-primary">
-            منصة تطوير
+            {mode === "forgot-password" ? "استعادة كلمة المرور" : "منصة تطوير"}
           </CardTitle>
           <CardDescription className="text-base">
-            {isLogin ? "مرحباً بعودتك! سجل دخولك للمتابعة" : "انضم إلينا وابدأ رحلة التطوير"}
+            {getTitle()}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-4">
-            {!isLogin && (
+            {mode === "signup" && (
               <>
                 <div className="space-y-2">
                   <Label htmlFor="fullName">الاسم الكامل</Label>
@@ -152,7 +179,7 @@ const Auth = () => {
                     placeholder="أدخل اسمك الكامل"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    required={!isLogin}
+                    required
                     disabled={loading}
                   />
                 </div>
@@ -183,7 +210,7 @@ const Auth = () => {
                     placeholder="أدخل رقم العضوية"
                     value={membershipNumber}
                     onChange={(e) => setMembershipNumber(e.target.value)}
-                    required={!isLogin}
+                    required
                     disabled={loading}
                   />
                 </div>
@@ -222,20 +249,35 @@ const Auth = () => {
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="password">كلمة المرور</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-                dir="ltr"
-                className="text-left"
-              />
-            </div>
+            {mode !== "forgot-password" && (
+              <div className="space-y-2">
+                <Label htmlFor="password">كلمة المرور</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                  dir="ltr"
+                  className="text-left"
+                />
+              </div>
+            )}
+
+            {mode === "login" && (
+              <div className="text-start">
+                <button
+                  type="button"
+                  onClick={() => setMode("forgot-password")}
+                  className="text-sm text-muted-foreground hover:text-primary hover:underline"
+                  disabled={loading}
+                >
+                  نسيت كلمة المرور؟
+                </button>
+              </div>
+            )}
             
             <Button 
               type="submit" 
@@ -247,31 +289,51 @@ const Auth = () => {
                   <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                   جاري التحميل...
                 </>
-              ) : isLogin ? (
+              ) : mode === "login" ? (
                 <>
                   <LogIn className="ml-2 h-4 w-4" />
                   تسجيل الدخول
                 </>
-              ) : (
+              ) : mode === "signup" ? (
                 <>
                   <UserPlus className="ml-2 h-4 w-4" />
                   إنشاء حساب
                 </>
+              ) : (
+                <>
+                  <KeyRound className="ml-2 h-4 w-4" />
+                  إرسال رابط الاستعادة
+                </>
               )}
             </Button>
-            
-            <div className="text-center">
-              <button
+
+            {mode === "forgot-password" && (
+              <Button
                 type="button"
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-sm text-primary hover:underline"
+                variant="ghost"
+                className="w-full gap-2"
+                onClick={() => setMode("login")}
                 disabled={loading}
               >
-                {isLogin
-                  ? "ليس لديك حساب؟ سجل الآن"
-                  : "لديك حساب بالفعل؟ سجل دخولك"}
-              </button>
-            </div>
+                <ArrowRight className="h-4 w-4" />
+                العودة لتسجيل الدخول
+              </Button>
+            )}
+            
+            {mode !== "forgot-password" && (
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setMode(mode === "login" ? "signup" : "login")}
+                  className="text-sm text-primary hover:underline"
+                  disabled={loading}
+                >
+                  {mode === "login"
+                    ? "ليس لديك حساب؟ سجل الآن"
+                    : "لديك حساب بالفعل؟ سجل دخولك"}
+                </button>
+              </div>
+            )}
           </form>
         </CardContent>
       </Card>
