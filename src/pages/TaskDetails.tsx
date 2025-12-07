@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, FileText, Calendar, Award, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { taskProofSchema, validateOrThrow } from "@/lib/validations";
 
 interface Task {
   id: string;
@@ -85,14 +86,19 @@ export default function TaskDetails() {
   };
 
   const handleSubmit = async () => {
-    if (!completionProof.trim()) {
+    let validProof: string;
+    try {
+      validProof = validateOrThrow(taskProofSchema, completionProof);
+    } catch (error: any) {
       toast({
         title: "تنبيه",
-        description: "يرجى إدخال إثبات إكمال المهمة",
+        description: error.message,
         variant: "destructive",
       });
       return;
     }
+
+    setSubmitting(true);
 
     setSubmitting(true);
     try {
@@ -104,7 +110,7 @@ export default function TaskDetails() {
         const { error } = await supabase
           .from("user_tasks")
           .update({
-            completion_proof: completionProof,
+            completion_proof: validProof,
             proof_type: proofType,
             status: "submitted",
             submitted_at: new Date().toISOString(),
@@ -119,7 +125,7 @@ export default function TaskDetails() {
           .insert({
             task_id: taskId,
             user_id: user.id,
-            completion_proof: completionProof,
+            completion_proof: validProof,
             proof_type: proofType,
             status: "submitted",
             submitted_at: new Date().toISOString(),

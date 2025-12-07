@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, Trash2, Image as ImageIcon, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { chatMessageSchema, validateOrThrow } from '@/lib/validations';
 
 interface PublicProfile {
   id: string;
@@ -162,6 +163,20 @@ export function ChatRoom({ lessonId, levelClassroom, title }: ChatRoomProps) {
 
   const sendMessage = async () => {
     if ((!newMessage.trim() && !selectedImage) || !currentUserId) return;
+
+    // Validate message length if there's text
+    if (newMessage.trim()) {
+      try {
+        validateOrThrow(chatMessageSchema, newMessage);
+      } catch (error: any) {
+        toast({
+          title: 'خطأ',
+          description: error.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
 
     setLoading(true);
     try {
