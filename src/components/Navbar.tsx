@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { NotificationsDropdown } from "@/components/NotificationsDropdown";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -108,7 +109,8 @@ export const Navbar = () => {
           </nav>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <NotificationsDropdown />
           {isAdmin && (
             <Button
               variant="ghost"
