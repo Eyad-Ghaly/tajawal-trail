@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, LogIn, UserPlus, ExternalLink, KeyRound, ArrowRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { loginSchema, signupSchema, forgotPasswordSchema, validateOrThrow } from "@/lib/validations";
 
 const GOVERNORATES = [
   "القاهرة",
@@ -60,9 +61,11 @@ const Auth = () => {
 
     try {
       if (mode === "login") {
+        const validData = validateOrThrow(loginSchema, { email, password });
+
         const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          email: validData.email,
+          password: validData.password,
         });
         
         if (error) throw error;
@@ -74,27 +77,24 @@ const Auth = () => {
         
         navigate("/dashboard");
       } else if (mode === "signup") {
-        // Validation
-        if (!fullName.trim()) {
-          throw new Error("يرجى إدخال الاسم الكامل");
-        }
-        if (!governorate) {
-          throw new Error("يرجى اختيار المحافظة");
-        }
-        if (!membershipNumber.trim()) {
-          throw new Error("يرجى إدخال رقم العضوية");
-        }
+        const validData = validateOrThrow(signupSchema, { 
+          email, 
+          password, 
+          fullName, 
+          governorate, 
+          membershipNumber 
+        });
 
         const { error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: validData.email,
+          password: validData.password,
           options: {
             data: {
-              full_name: fullName,
+              full_name: validData.fullName,
               role: "learner",
               level: "Beginner",
-              governorate: governorate,
-              membership_number: membershipNumber,
+              governorate: validData.governorate,
+              membership_number: validData.membershipNumber,
             },
             emailRedirectTo: `${window.location.origin}/dashboard`,
           },
@@ -109,7 +109,9 @@ const Auth = () => {
         
         setMode("login");
       } else if (mode === "forgot-password") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const validData = validateOrThrow(forgotPasswordSchema, { email });
+
+        const { error } = await supabase.auth.resetPasswordForEmail(validData.email, {
           redirectTo: `${window.location.origin}/update-password`,
         });
         
