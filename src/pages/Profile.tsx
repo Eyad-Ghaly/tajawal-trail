@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { ProfileAvatarUpload } from "@/components/ProfileAvatarUpload";
 import { 
   TrendingUp, 
   Award, 
@@ -195,12 +196,21 @@ const Profile = () => {
         <Card className="border-none shadow-xl">
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row items-center gap-6">
-              <Avatar className="h-32 w-32 border-4 border-primary/20">
-                <AvatarImage src={profile?.avatar_url} />
-                <AvatarFallback className="text-3xl bg-primary text-primary-foreground">
-                  {profile?.full_name?.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
+              {isOwnProfile ? (
+                <ProfileAvatarUpload
+                  userId={currentUserId!}
+                  userName={profile?.full_name || ""}
+                  currentAvatarUrl={profile?.avatar_url}
+                  onAvatarUpdated={loadProfile}
+                />
+              ) : (
+                <Avatar className="h-32 w-32 border-4 border-primary/20">
+                  <AvatarImage src={profile?.avatar_url} />
+                  <AvatarFallback className="text-3xl bg-primary text-primary-foreground">
+                    {profile?.full_name?.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+              )}
               
               <div className="flex-1 text-center md:text-right space-y-3">
                 <div>
